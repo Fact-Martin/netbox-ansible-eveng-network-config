@@ -1,0 +1,11 @@
+# Ansible operational tracking files
+*.retry
+*.log
+
+# Vault security text keys (Never commit these!)
+.vault_pass
+vault_password.txt
+
+# Local environment variables text configurations
+.env
+.envrc
