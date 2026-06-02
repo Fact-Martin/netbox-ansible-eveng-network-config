@@ -1,0 +1,25 @@
+plugin: netbox.netbox.nb_inventory
+# Dynamic lookup filters read from your terminal's environment variables
+#api_endpoint: "{{ lookup('env', 'NETBOX_API_URL') }}"
+#token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+validate_certs: false
+
+# Convert hyphens to underscore
+transform_nested_groups: true
+
+# Filter: Only pull devices from your specific lab site
+query_filters:
+  - site: 'mcf-hq'
+
+# Filter: Explicitly pull routers, cores, and distribution nodes (excluding access)
+device_query_filters:
+  - role: 'edge-router'
+  - role: 'core-switch'
+  - role: 'dist-switch'
+
+# Grouping: Automatically sort nodes into inventory groups based on their NetBox roles
+group_by:
+  - device_roles
+
+# Routing: Forces Ansible to connect to the NetBox Primary IPv4 address we set up
+ansible_host_dns_name: false
