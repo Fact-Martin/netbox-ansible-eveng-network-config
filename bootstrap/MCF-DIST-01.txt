@@ -1,0 +1,34 @@
+# This is bootstrap config on L3 switches that act as Edge Router
+ip routing
+
+# Hostname config
+hostname MCF-DIST-01
+
+# Configure domain name needed to generate ssh keys
+ip domain name mcfnetworksecurity.com
+
+# Generate the crypto keys
+crypto key generate rsa general-keys modulus 2048
+
+# Enable SSH version 2
+ip ssh version 2
+
+# Configure username and this will be used to login using SSH
+username martin privilege 15 secret martinchunga
+
+# Configure interface connected to MCF-CORE-01
+interface Ethernet0/2
+ description Connected to MCF-CORE-01 Ethernet0/2
+ no switchport
+ ip address 10.100.0.18 255.255.255.252
+ no shutdown
+
+
+# Enable OSPF for connectivity
+router ospf 1
+ network 10.100.0.0 0.0.255.255 area 0
+
+# Configure SSH to allow login
+line vty 0 4
+ login local
+ transport input ssh
