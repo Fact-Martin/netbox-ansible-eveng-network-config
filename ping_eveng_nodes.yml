@@ -1,0 +1,22 @@
+---
+- name: Verify Live Cisco IOL Node Connectivity
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: cisco.ios.ios
+    ansible_network_cli_ssh_type: paramiko
+    ansible_auth_timeout: 30
+    # ENFORCEMENT: Enforce password authentication AND match the SHA-2 host keys
+    ansible_ssh_extra_args: "-o PreferredAuthentications=password -o PubkeyAuthentication=no -o HostKeyAlgorithms=+rsa-sha2-256,rsa-sha2-512"
+
+  tasks:
+    - name: Run Cisco IOS validation command to verify SSH channel
+      cisco.ios.ios_command:
+        commands: show clock
+      register: output
+
+    - name: Display connection success
+      ansible.builtin.debug:
+        msg: "Successfully logged into {{ inventory_hostname }}. Device clock time is: {{ output.stdout }}"

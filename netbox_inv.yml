@@ -1,7 +1,5 @@
 plugin: netbox.netbox.nb_inventory
-# Dynamic lookup filters read from your terminal's environment variables
-#api_endpoint: "{{ lookup('env', 'NETBOX_API_URL') }}"
-#token: "{{ lookup('env', 'NETBOX_TOKEN') }}"
+# Dynamic lookup filters read from terminal environment variables
 validate_certs: false
 
 # Convert hyphens to underscore
