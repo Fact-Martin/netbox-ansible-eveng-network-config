@@ -1,0 +1,52 @@
+---
+- name: Configure Interface and IP Provisioning from NetBox API
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    # QUERY NETBOX IPAM ENDPOINT TO GET INTERFACE IP MAPPINGS ---
+    - name: Fetch IP address assignments via NetBox IPAM API
+      ansible.builtin.uri:
+        url: "{{ lookup('ansible.builtin.env', 'NETBOX_API') }}/api/ipam/ip-addresses/?device={{ inventory_hostname }}"
+        headers:
+          Authorization: "Token {{ lookup('ansible.builtin.env', 'NETBOX_TOKEN') }}"
+          Accept: "application/json"
+        method: GET
+        status_code: 200
+      register: netbox_ipam_response
+      delegate_to: localhost
+
+    # LOOP THROUGH ASSIGNED IPS AND APPLY TO PORTS ---
+    - name: Dynamically apply descriptions and IP metrics to Cisco ports
+      cisco.ios.ios_config:
+        lines:
+          - "description {{ target_description }}"
+          # Apply 'no switchport' if it is a physical interface (FastEthernet, Ethernet, Gigabit, etc.)
+          - "{{ 'no switchport' if ('ethernet' in clean_interface or 'fast' in clean_interface or 'gigabit' in clean_interface) else json_noop | default(omit) }}"
+          - "ip address {{ interface_ip | ipaddr('address') }} {{ interface_ip | ipaddr('netmask') }}"
+          - no shutdown
+        parents: "interface {{ clean_interface }}"
+      loop: "{{ netbox_ipam_response.json.results | default([]) }}"
+      vars:
+        # Extract raw name and strip redundant 'interface ' prefixes
+        raw_interface: "{{ item.assigned_object.name | default('') | lower | regex_replace('^interface\\s+', '') }}"
+
+        # Automatically translate shorthand prefixes (f0/0 -> FastEthernet0/0, e0/0 -> Ethernet0/0, g0/0 -> GigabitEthernet0/0)
+        clean_interface: "{{ raw_interface | regex_replace('^f(\\d)', 'FastEthernet\\1') | regex_replace('^e(\\d)', 'Ethernet\\1') | regex_replace('^g(\\d)', 'GigabitEthernet\\1') }}"
+
+        # Pull attributes and format IPs safely
+        target_description: "{{ item.description | default('Managed by Ansible - NetBox - Martin Chunga') }}"
+        interface_ip: "{{ item.address | default('') }}"
+        clean_ip: "{{ interface_ip | ipaddr('address') }}"
+      when:
+        - raw_interface != ''
+        - interface_ip != ''
+        # Skip the port if its IP matches the active session management IP
+        - clean_ip != ansible_host
+        # Ensure the assigned object is actually a device interface
+        - item.assigned_object_type == "dcim.interface"
+
+    # COMMIT CONFIGURATIONS TO FLASH
+    - name: Commit all active running changes to NVRAM storage(startup configurations)
+      cisco.ios.ios_command:
+        commands: write memory

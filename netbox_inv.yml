@@ -5,19 +5,19 @@ validate_certs: false
 # Convert hyphens to underscore
 transform_nested_groups: true
 
-# Filter: Only pull devices from your specific lab site
+# Pull devices from  MCF--HQ lab site
 query_filters:
   - site: 'mcf-hq'
 
-# Filter: Explicitly pull routers, cores, and distribution nodes (excluding access)
+# Explicitly pull routers, cores, and distribution nodes (excluding access)
 device_query_filters:
   - role: 'edge-router'
   - role: 'core-switch'
   - role: 'dist-switch'
 
-# Grouping: Automatically sort nodes into inventory groups based on their NetBox roles
+# Automatically sort nodes into inventory groups based on their NetBox roles
 group_by:
   - device_roles
 
-# Routing: Forces Ansible to connect to the NetBox Primary IPv4 address we set up
+# Forces Ansible to connect to the NetBox Primary IPv4 address
 ansible_host_dns_name: false
